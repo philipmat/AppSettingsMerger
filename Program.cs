@@ -3,12 +3,12 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 
-bool WriteFiles = false;
+bool WriteFiles = true;
 
 var argList = args.ToList();
-if (argList.Contains("--write", StringComparer.OrdinalIgnoreCase)) {
-    WriteFiles = true;
-    argList.Remove("--write");
+if (argList.Contains("--dry-run", StringComparer.OrdinalIgnoreCase)) {
+    WriteFiles = false;
+    argList.Remove("--dry-run");
 }
 
 if (argList.Count < 2) {
@@ -24,15 +24,29 @@ Queue<string> files = new (argList
 var file0 = files.Dequeue();
 var config0 = MakeConfiguration(file0);
 
+var file0forLoop = file0;
+var tempFiles = new List<string>();
+
 while(files.TryDequeue(out var file1)) {
-    var (content0, content1) = CompareFileConfigs(file0, file1);
+    var (content0, content1) = CompareFileConfigs(file0forLoop, file1);
     if (WriteFiles) {
         File.WriteAllText(file0, content0);
         File.WriteAllText(file1, content1);
     } else {
         Echo($"====== { file0 } ======\n{content0}\n------\n");
         Echo($"====== { file1 } ======\n{content1}\n------\n");
+        // I don't know how to use ConfigBuilder with an in-memory JSON string
+        // so writing content0 to temp file
+        var tempFile0 = Path.GetTempFileName();
+        File.WriteAllText(tempFile0, content0);
+        file0forLoop = tempFile0;
+        tempFiles.Add(tempFile0);
     }
+}
+
+// yes, this is optimistic
+foreach (var file in tempFiles) {
+    File.Delete(file); 
 }
 
 
@@ -54,7 +68,7 @@ static IConfiguration MakeConfiguration(string file) {
     var basePath = Path.GetDirectoryName(file);
     var fileName = Path.GetFileName(file);
     var configuration = new ConfigurationBuilder()
-        .SetBasePath(basePath)
+        .SetBasePath(basePath!)
         .AddJsonFile(fileName)
         .Build();
     return configuration;
