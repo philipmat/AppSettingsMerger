@@ -1,4 +1,6 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Unicode;
 
 /// <summary>
 /// Since <see cref="IConfiguration"/> cannot write to appSettings.json,
@@ -14,12 +16,19 @@ using System.Text.Json;
 public class AppSettingsUpdater
 {
     private const string EmptyJson = "{}";
+    private static readonly JsonSerializerOptions SerializerOptions = new();
 
     /// <summary>Creates an updater using the JSON content of an appSettings file</summary>
     /// <param name="jsonContent">The JSON content of an appSettings.json file.</param>
     public AppSettingsUpdater(string jsonContent)
     {
-      Content = jsonContent; 
+        Content = jsonContent;
+        // the new serializer is a bit more aggressive and serializes some ASCII as \uxxxx
+        TextEncoderSettings encoderSettings = new();
+        encoderSettings.AllowCharacters('\u002B'); // + == \u002B
+        encoderSettings.AllowRange(UnicodeRanges.BasicLatin);
+        SerializerOptions.WriteIndented = true;
+        SerializerOptions.Encoder = JavaScriptEncoder.Create(encoderSettings);
     }
 
     /// <summary>The current content, after <see cref="UpdateAppSetting"/>  has been called.</summary>
@@ -35,7 +44,7 @@ public class AppSettingsUpdater
 
         var updatedConfigDict = UpdateJson(key, value, Content);
         // After receiving the dictionary with updated key value pair, we serialize it back into json.
-        var updatedJson = JsonSerializer.Serialize(updatedConfigDict, new JsonSerializerOptions { WriteIndented = true });
+        var updatedJson = JsonSerializer.Serialize(updatedConfigDict, SerializerOptions);
 
         Content = updatedJson;
     }
