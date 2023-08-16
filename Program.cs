@@ -33,8 +33,8 @@ while(files.TryDequeue(out var file1)) {
         File.WriteAllText(file0, content0);
         File.WriteAllText(file1, content1);
     } else {
-        Echo($"====== { file0 } ======\n{content0}\n------\n");
-        Echo($"====== { file1 } ======\n{content1}\n------\n");
+        Echo($"// ====== { file0 } ======\n{content0}\n// ------\n");
+        Echo($"// ====== { file1 } ======\n{content1}\n// ------\n");
         // I don't know how to use ConfigBuilder with an in-memory JSON string
         // so writing content0 to temp file
         var tempFile0 = Path.GetTempFileName();
