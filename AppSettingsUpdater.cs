@@ -18,17 +18,22 @@ public class AppSettingsUpdater
     private const string EmptyJson = "{}";
     private static readonly JsonSerializerOptions SerializerOptions = new();
 
-    /// <summary>Creates an updater using the JSON content of an appSettings file</summary>
-    /// <param name="jsonContent">The JSON content of an appSettings.json file.</param>
-    public AppSettingsUpdater(string jsonContent)
+    static AppSettingsUpdater()
     {
-        Content = jsonContent;
         // the new serializer is a bit more aggressive and serializes some ASCII as \uxxxx
         TextEncoderSettings encoderSettings = new();
         encoderSettings.AllowCharacters('\u002B'); // + == \u002B
         encoderSettings.AllowRange(UnicodeRanges.BasicLatin);
         SerializerOptions.WriteIndented = true;
         SerializerOptions.Encoder = JavaScriptEncoder.Create(encoderSettings);
+
+    }
+
+    /// <summary>Creates an updater using the JSON content of an appSettings file</summary>
+    /// <param name="jsonContent">The JSON content of an appSettings.json file.</param>
+    public AppSettingsUpdater(string jsonContent)
+    {
+        Content = jsonContent;
     }
 
     /// <summary>The current content, after <see cref="UpdateAppSetting"/>  has been called.</summary>
